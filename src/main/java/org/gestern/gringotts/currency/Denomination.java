@@ -17,21 +17,19 @@ public class Denomination implements Comparable<Denomination> {
 
     /** Item type of this denomination. */
     public final ItemStack type;
-    public final Material id;
+    public final Material material;
     public final short damage;
     public final long value;
-    public String name;
-    public String namePlural;
+    public final String name;
+    public final String namePlural;
 
-    public Denomination(ItemStack type) {
-        this(type, 0);
-    }
-
-    public Denomination(ItemStack type, long value) {
+    public Denomination(ItemStack type, long value, String name, String namePlural) {
         this.type = type;
-        this.id = type.getType();
+        this.material = type.getType();
         this.damage = type.getDurability();
         this.value = value;
+        this.name = name;
+        this.namePlural = namePlural;
     }
 
     @Override
@@ -39,7 +37,7 @@ public class Denomination implements Comparable<Denomination> {
         final int prime = 31;
         int result = 1;
         result = prime * result + damage;
-        result = prime * result + id.hashCode();
+        result = prime * result + material.hashCode();
         return result;
     }
 
@@ -52,7 +50,7 @@ public class Denomination implements Comparable<Denomination> {
         if (getClass() != obj.getClass())
             return false;
         Denomination other = (Denomination) obj;
-        return damage == other.damage && id == other.id;
+        return damage == other.damage && material == other.material;
     }
 
     @Override
@@ -63,11 +61,15 @@ public class Denomination implements Comparable<Denomination> {
 
     @Override
     public String toString() {
-        return String.format("Denomination: (%s) %s;%d : %d", (name == null ? "" : name), id, damage, value);
+        return String.format("Denomination: (%s) %s;%d : %d", (name == null ? "" : name), material, damage, value);
+    }
+
+    public boolean isDenominationOf(ItemStack stack) {
+        return (stack.getType() == this.material) && (stack.getDurability() == this.damage);
     }
 
     public boolean hasName() {
-        return this.namePlural != null && this.namePlural.length() > 0
-                && this.name != null && this.name.length() > 0;
+        return this.namePlural != null && this.namePlural.isEmpty()
+                && this.name != null && this.name.isEmpty();
     }
 }

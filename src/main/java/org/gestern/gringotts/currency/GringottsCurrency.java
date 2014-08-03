@@ -17,8 +17,7 @@ public class GringottsCurrency {
     // yes, I want to be able to get the key from the key.
     // this is because I want to find a denomination's value based on its type.
     // TODO considering there are usually only very few denominations.. simplify this using just a simple friggin list or array
-    private final Map<Denomination,Denomination> denoms = new HashMap<>();
-    private final List<Denomination> sortedDenoms = new ArrayList<>();
+    private final List<Denomination> denoms = new ArrayList<>();
 
     /** Name of the currency. */
     public final String name;
@@ -61,20 +60,12 @@ public class GringottsCurrency {
      * @param type the denomination's item type
      * @param value the denomination's value
      */
-    public Denomination addDenomination(ItemStack type, double value) {
-        Denomination d = new Denomination(type, Math.round(centValue(value)));
+    public void addDenomination(ItemStack type, double value, String name, String namePlural) {
+        Denomination d = new Denomination(type, Math.round(centValue(value)), name, namePlural);
 
-        // Special-case for backwards compatibility for named denominations
-        if (value == 1) {
-            d.name = name;
-            d.namePlural = namePlural;
-        }
-        denoms.put(d, d);
         // infrequent insertion, so I don't mind sorting on every insert
-        sortedDenoms.add(d);
-        Collections.sort(sortedDenoms);
-
-        return d;
+        denoms.add(d);
+        Collections.sort(denoms);
     }
 
 
@@ -115,7 +106,7 @@ public class GringottsCurrency {
      * @return List of denominations used in this currency, in order of descending value
      */
     public List<Denomination> denominations() {
-        return new ArrayList<>(sortedDenoms);
+        return new ArrayList<>(denoms);
     }
 
     /**
@@ -124,16 +115,24 @@ public class GringottsCurrency {
      * @return denomination for the item stack, or null if there is no such denomination
      */
     private Denomination denominationOf(ItemStack stack) {
-        Denomination d = new Denomination(stack);
-        return denoms.get(d);
+        for (Denomination d : denoms)
+            if (d.isDenominationOf(stack)) return d;
+
+        return null;
     }
 
+    /**
+     * Format a currency value based on denomination names
+     * @param formatString
+     * @param value
+     * @return
+     */
     public String format(String formatString, double value) {
         String output = "";
         String delimiter = "";
-        int denomCount = sortedDenoms.size();
-        for (int index = 0; index < denomCount; index++) {
-            Denomination denomination = sortedDenoms.get(index);
+        int denomCount = denoms.size();
+        for (int i = 1; i <= denomCount; i++) {
+            Denomination denomination = denoms.get(i);
             double denomationValue = denomination.value / unit;
             // Skip over unnamed denominations
             // This means the lowest denomination should probably have
@@ -142,15 +141,19 @@ public class GringottsCurrency {
             // to really fix this.
             if (denomination.hasName()
                 // If we haven't output anything yet, always process the final denomination
-                && ((output.isEmpty() && index == denomCount -1 ) || value > denomationValue)
+                && ((output.isEmpty() && i == denomCount ) || value > denomationValue)
                 // Sanity-check to avoid divide by zero error on misconfigured denominations
                 && denomationValue != 0) {
                 double denomAmount = value / denomationValue;
                 value = value - Math.floor(denomAmount) * denomationValue;
 
                 // Special-case lowest denomination, which gets decimal places for remainder.
-                String formattedAmount = index == denomCount - 1 ? String.format(formatString, denomAmount) : Integer.toString((int)denomAmount);
-                output = output + delimiter + formattedAmount + " " + (denomAmount==1.0? denomination.name : denomination.namePlural);
+                String formattedAmount =
+                        i == denomCount ?
+                                String.format(formatString, denomAmount)
+                                : Integer.toString((int)denomAmount);
+                output = output + delimiter + formattedAmount + " " +
+                        (denomAmount==1.0? denomination.name : denomination.namePlural);
                 delimiter = ", ";
             }
         }

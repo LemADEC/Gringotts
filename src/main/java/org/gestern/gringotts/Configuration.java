@@ -8,6 +8,7 @@ import org.bukkit.material.MaterialData;
 import org.gestern.gringotts.currency.Denomination;
 import org.gestern.gringotts.currency.GringottsCurrency;
 
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -94,7 +95,7 @@ public enum Configuration {
             // TODO use material name instead of id
             ItemStack legacyCurrency = new ItemStack(currencyType, 0, (short)0);
             legacyCurrency.setData(new MaterialData(currencyType, currencyDataValue));
-            currency.addDenomination(legacyCurrency, 1);
+            currency.addDenomination(legacyCurrency, 1, "", "");
         } else {
             // regular currency configuration (multi-denomination)
             ConfigurationSection denomSection = savedConfig.getConfigurationSection("currency.denominations");
@@ -142,20 +143,33 @@ public enum Configuration {
                 // Check for simple values, or a map with custom names
                 if (denomSection.isDouble(denomStr) || denomSection.isInt(denomStr)) {
                     double value = denomSection.getDouble(denomStr);
-                    currency.addDenomination(denomType, value);
+                    currency.addDenomination(denomType, value, "", "");
                 } else {
                     ConfigurationSection denomConfig = denomSection.getConfigurationSection(denomStr);
 
-                    // Support "inverse_value" for lower denominations
-                    double value = denomConfig.contains("inverse_value") ? 1.0 / denomConfig.getDouble("inverse_value") : denomConfig.getDouble("value");
-                    Denomination denomination = currency.addDenomination(denomType, value);
-                    denomination.name = denomConfig.getString("singular");
-                    denomination.namePlural = denomConfig.getString("plural");
+                    double value = denomConfig.getDouble("value");
+                    String nameSingular = denomConfig.getString("singular");
+                    String namePlural = denomConfig.getString("plural");
+                    if(nameSingular == null)
+                        throw new GringottsConfigurationException("When using named denominations, all denominations must have a name.");
+                    if (namePlural == null)
+                        namePlural = nameSingular + "s";
+
+                    currency.addDenomination(denomType, value, nameSingular, namePlural);
                 }
 
             } catch (Exception e) {
                 throw new GringottsConfigurationException("Encountered an error parsing currency. Please check your Gringotts configuration.", e);
             }
+
+            // validate that all the denominations are named, or none of them.
+            List<Denomination> denomsList = currency.denominations();
+            int named = 0;
+            for (Denomination d : denomsList)
+                if (d.hasName()) ++named;
+
+            if (named != 0 && named != denomsList.size())
+                throw new GringottsConfigurationException("When using named denominations, all denominations must have a name.");
         }
 
     }
