@@ -139,24 +139,29 @@ public enum Configuration {
                 type = Integer.parseInt(parts[0]);
                 if (parts.length >=2) dmg = Short.parseShort(parts[1]);
                 ItemStack denomType = new ItemStack(type, 1, dmg);
+                double value = 0;
+                String name = "";
+                String namePlural = "";
 
                 // Check for simple values, or a map with custom names
                 if (denomSection.isDouble(denomStr) || denomSection.isInt(denomStr)) {
-                    double value = denomSection.getDouble(denomStr);
-                    currency.addDenomination(denomType, value, "", "");
+                    value = denomSection.getDouble(denomStr);
                 } else {
                     ConfigurationSection denomConfig = denomSection.getConfigurationSection(denomStr);
 
-                    double value = denomConfig.getDouble("value");
-                    String nameSingular = denomConfig.getString("singular");
-                    String namePlural = denomConfig.getString("plural");
-                    if(nameSingular == null)
+                    value = denomConfig.getDouble("value");
+                    name = denomConfig.getString("singular");
+                    namePlural = denomConfig.getString("plural");
+                    if(name == null)
                         throw new GringottsConfigurationException("When using named denominations, all denominations must have a name.");
                     if (namePlural == null)
-                        namePlural = nameSingular + "s";
-
-                    currency.addDenomination(denomType, value, nameSingular, namePlural);
+                        namePlural = name + "s";
                 }
+
+                if (value <= 0)
+                    throw new GringottsConfigurationException("Denomination values must be positive.");
+
+                currency.addDenomination(denomType, value, name, namePlural);
 
             } catch (Exception e) {
                 throw new GringottsConfigurationException("Encountered an error parsing currency. Please check your Gringotts configuration.", e);
