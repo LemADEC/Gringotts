@@ -130,30 +130,34 @@ public class GringottsCurrency {
     public String format(String formatString, double value) {
         String output = "";
         String delimiter = "";
+        double remainingValue = value;
         int denomCount = denoms.size();
+
         for (int i = 1; i <= denomCount; i++) {
             Denomination denomination = denoms.get(i);
             double denomationValue = denomination.value / unit;
-            // Skip over unnamed denominations
-            // This means the lowest denomination should probably have
-            // a name, or you may not get output sometimes.
-            // I think we'd need a list of just the named denominations
-            // to really fix this.
-            if (denomination.hasName()
-                // If we haven't output anything yet, always process the final denomination
-                && ((output.isEmpty() && i == denomCount ) || value > denomationValue)
-                // Sanity-check to avoid divide by zero error on misconfigured denominations
-                && denomationValue != 0) {
-                double denomAmount = value / denomationValue;
-                value = value - Math.floor(denomAmount) * denomationValue;
 
+            // always process the final denomination
+            if (i == denomCount || remainingValue > denomationValue) {
+
+                double denomAmount = remainingValue / denomationValue;
+                remainingValue -= Math.floor(denomAmount) * denomationValue;
+
+                String formattedAmount = "",
+                    name = denomination.name, namePlural = denomination.namePlural;
                 // Special-case lowest denomination, which gets decimal places for remainder.
-                String formattedAmount =
-                        i == denomCount ?
-                                String.format(formatString, denomAmount)
-                                : Integer.toString((int)denomAmount);
+                if (i == denomCount) {
+                    formattedAmount = String.format(formatString, denomAmount);
+                    // use currency name if it doesn't have its own given name
+                    if (! denomination.hasName()) {
+                        name = this.name;
+                        namePlural = this.namePlural;
+                    }
+                } else
+                    formattedAmount = Integer.toString((int)denomAmount);
+
                 output = output + delimiter + formattedAmount + " " +
-                        (denomAmount==1.0? denomination.name : denomination.namePlural);
+                        (denomAmount==1.0? name : namePlural);
                 delimiter = ", ";
             }
         }
