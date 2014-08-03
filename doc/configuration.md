@@ -81,7 +81,7 @@ Globally enable use of specific kinds of vault:
 Localization and message customization
 --------------------------------------
 On first start of Gringotts, a `messages.yml` file will be written to the Gringotts plugin folder.
-You can freely edit the available strings and also include text formatting (color) codes.
+You can freely edit the available strings and also include [text formatting (color) codes](http://minecraft.gamepedia.com/Formatting_codes).
 
 Some messages contain variables, for example `%player` for the player's name or `%value` for the amount transferred in a transaction. It is important not to change or translate these variable names. They may only be used in messages where they are already present in the original version, but it is safe to omit them from a custom message.
 
@@ -143,23 +143,24 @@ Use player inventory as vault when player is online.
 
 ### User commands
 
-Use player's enderchest as vault when player is online.
+Use Gringotts commands.
 
     gringotts.command
       default: true
 
-Allow all user transaction commands (pay, deposit, withdraw)
+Allow transfer command (pay)
 
-    gringotts.command.withdraw:
+    gringotts.transfer:
       default: true
 
 Allow withdrawal of money from chest storage to inventory via `/money withdraw`.
     
-    gringotts.command.deposit:
+    gringotts.command.withdraw:
       default: true
+      
 Allow deposit of money to chest storage from inventory via `/money deposit`.
     
-    gringotts.transfer:
+    gringotts.command.deposit:
       default: true
 
 ### Admin permissions
