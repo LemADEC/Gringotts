@@ -122,7 +122,7 @@ public class GringottsCurrency {
     }
 
     /**
-     * Format a currency value based on denomination names
+     * Format a currency value based on denomination names.
      * @param formatString
      * @param value
      * @return

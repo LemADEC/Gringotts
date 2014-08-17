@@ -163,12 +163,18 @@ public enum Configuration {
 
                 currency.addDenomination(denomType, value, name, namePlural);
 
+            } catch (GringottsConfigurationException e) {
+                throw e;
             } catch (Exception e) {
                 throw new GringottsConfigurationException("Encountered an error parsing currency. Please check your Gringotts configuration.", e);
             }
 
             // validate that all the denominations are named, or none of them.
             List<Denomination> denomsList = currency.denominations();
+
+            if (denomsList.isEmpty())
+                throw new GringottsConfigurationException("There must be at least one denomination configured.");
+
             int named = 0;
             for (Denomination d : denomsList)
                 if (d.hasName()) ++named;
