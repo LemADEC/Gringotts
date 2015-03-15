@@ -34,7 +34,8 @@ class Commands {
      * Player commands.
      */
     public class Money implements CommandExecutor{
-        public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
+        @Override
+		public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 
             Player player;
             if (sender instanceof Player) {
@@ -166,7 +167,8 @@ class Commands {
      */
     public class Moneyadmin implements CommandExecutor {
 
-        public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
+        @Override
+		public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 
             String command;
             if (args.length >= 2) {

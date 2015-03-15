@@ -1,6 +1,7 @@
 package org.gestern.gringotts.data;
 
 import com.avaje.ebean.EbeanServer;
+
 import org.gestern.bukkitmigration.UUIDFetcher;
 import org.gestern.gringotts.Gringotts;
 
@@ -62,8 +63,10 @@ public class Migration {
         List<String> names = new LinkedList<>();
         for (EBeanAccount account : accounts) {
             String owner = account.getOwner();
-            try { UUID ignored = UUID.fromString(owner); }
-            catch(IllegalArgumentException ignored) {
+            try {
+            	@SuppressWarnings("unused")
+				UUID ignored = UUID.fromString(owner);
+            } catch(IllegalArgumentException ignored) {
                 // when owner string is not a valid uuid, do the migration thing
                 String name = account.getOwner();
                 names.add(name);

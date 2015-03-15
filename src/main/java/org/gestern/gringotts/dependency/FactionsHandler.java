@@ -2,7 +2,7 @@ package org.gestern.gringotts.dependency;
 
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.entity.Faction;
-import com.massivecraft.factions.entity.FactionColls;
+import com.massivecraft.factions.entity.FactionColl;
 import com.massivecraft.factions.entity.MPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -40,7 +40,7 @@ public class FactionsHandler implements DependencyHandler, AccountHolderProvider
 
         MPlayer fplayer = MPlayer.get(player);
         Faction playerFaction = fplayer.getFaction();
-        return playerFaction != null? new FactionAccountHolder(playerFaction) : null;
+        return playerFaction != null ? new FactionAccountHolder(playerFaction) : null;
     }
 
     /**
@@ -49,7 +49,7 @@ public class FactionsHandler implements DependencyHandler, AccountHolderProvider
      * @return faction account holder for given id
      */
     public FactionAccountHolder getAccountHolderById(String id) {
-        Faction faction = FactionColls.get().get2(id);
+        Faction faction = FactionColl.get().getByName(id);
         return faction != null? new FactionAccountHolder(faction) : null;
     }
 
@@ -84,7 +84,7 @@ public class FactionsHandler implements DependencyHandler, AccountHolderProvider
         if (owner != null) return owner;
 
         // just in case, also try the tag
-        Faction faction = FactionColls.get().get2(id);
+        Faction faction = FactionColl.get().getByName(id);
 
         if (faction != null) 
             return new FactionAccountHolder(faction);
@@ -141,7 +141,7 @@ class FactionAccountHolder implements AccountHolder {
     }
 
     public FactionAccountHolder(String id) {
-        Faction faction = FactionCollss.get().get2(id);
+        Faction faction = FactionColl.get().getByName(id);
 
         if (faction != null)
             this.owner = faction;
