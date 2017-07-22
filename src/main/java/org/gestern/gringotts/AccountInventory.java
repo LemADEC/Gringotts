@@ -5,8 +5,8 @@ import org.bukkit.inventory.ItemStack;
 import org.gestern.gringotts.currency.Denomination;
 import org.gestern.gringotts.currency.GringottsCurrency;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 
 import static org.gestern.gringotts.Configuration.CONF;
 
@@ -50,7 +50,7 @@ public class AccountInventory {
         // try denominations from largest to smallest
         for(Denomination denom : CONF.currency.denominations()) {
             if (denom.value <= remaining) {
-                ItemStack stack = new ItemStack(denom.type);
+                ItemStack stack = new ItemStack(denom.key.type);
                 int stacksize = stack.getMaxStackSize();
                 long denomItemCount = denom.value > 0? remaining / denom.value : 0;
 
@@ -64,7 +64,7 @@ public class AccountInventory {
                         returned += leftover.getAmount();
 
                     // reduce remaining amount by whatever was deposited
-                    long added = remainderStackSize-returned;
+                    long added = (long)remainderStackSize-returned;
                     denomItemCount -= added;
                     remaining -= added * denom.value;
 
@@ -92,9 +92,9 @@ public class AccountInventory {
 
         // try denominations from smallest to largest
         List<Denomination> denoms = cur.denominations();
-        Collections.reverse(denoms);
-        for(Denomination denom : denoms) {
-            ItemStack stack = new ItemStack(denom.type);
+        for(ListIterator<Denomination> it = denoms.listIterator(denoms.size()); it.hasPrevious();) {
+            Denomination denom = it.previous();
+            ItemStack stack = new ItemStack(denom.key.type);
             int stacksize = stack.getMaxStackSize();
 
             // take 1 more than necessary if it doesn't round. add the extra later
@@ -110,7 +110,7 @@ public class AccountInventory {
                     returned += leftover.getAmount();
 
                 // reduce remaining amount by whatever was removed
-                long removed = remainderStackSize-returned;
+                long removed = (long)remainderStackSize-returned;
                 denomItemCount -= removed;
                 remaining -= removed * denom.value;
 

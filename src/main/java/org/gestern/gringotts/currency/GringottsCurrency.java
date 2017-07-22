@@ -1,5 +1,6 @@
 package org.gestern.gringotts.currency;
 
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
@@ -14,10 +15,7 @@ import java.util.*;
  */
 public class GringottsCurrency {
 
-    // yes, I want to be able to get the key from the key.
-    // this is because I want to find a denomination's value based on its type.
-    // TODO considering there are usually only very few denominations.. simplify this using just a simple friggin list or array
-    private final Map<Denomination,Denomination> denoms = new HashMap<>();
+    private final Map<DenominationKey,Denomination> denoms = new HashMap<>();
     private final List<Denomination> sortedDenoms = new ArrayList<>();
 
     /** Name of the currency. */
@@ -39,16 +37,20 @@ public class GringottsCurrency {
      */
     public final int digits;
 
+    /** Show balances and other currency values with individual denomination names. */
+    public final boolean namedDenominations;
+
     /**
      * Create currency.
      * @param name name of currency
      * @param namePlural plural of currency name
      * @param digits decimal digits used in currency
      */
-    public GringottsCurrency(String name, String namePlural, int digits) {
+    public GringottsCurrency(String name, String namePlural, int digits, boolean namedDenominations) {
         this.name = name;
         this.namePlural = namePlural;
         this.digits = digits;
+        this.namedDenominations = namedDenominations;
 
         // calculate the "unit" from digits. It's just a power of 10!
         int d=digits, u = 1;
@@ -61,9 +63,10 @@ public class GringottsCurrency {
      * @param type the denomination's item type
      * @param value the denomination's value
      */
-    public void addDenomination(ItemStack type, double value) {
-        Denomination d = new Denomination(type, Math.round(centValue(value)));
-        denoms.put(d, d);
+    public void addDenomination(ItemStack type, double value, String unitName, String unitNamePlural) {
+        DenominationKey k = new DenominationKey(type);
+        Denomination d = new Denomination(k, centValue(value), unitName, unitNamePlural);
+        denoms.put(k, d);
         // infrequent insertion, so I don't mind sorting on every insert
         sortedDenoms.add(d);
         Collections.sort(sortedDenoms);
@@ -104,10 +107,41 @@ public class GringottsCurrency {
 
     /**
      * List of denominations used in this currency, in order of descending value.
-     * @return List of denominations used in this currency, in order of descending value
+     * @return Unmodifiable List of denominations used in this currency, in order of descending value
      */
     public List<Denomination> denominations() {
-        return new ArrayList<>(sortedDenoms);
+        return Collections.unmodifiableList(sortedDenoms);
+    }
+
+    public String format(String formatString, double value) {
+
+        if (namedDenominations) {
+
+            StringBuilder b = new StringBuilder();
+
+            long cv = centValue(value);
+
+            for (Denomination denom : sortedDenoms) {
+                long dv = cv / denom.value;
+                cv %= denom.value;
+
+                if (dv > 0) {
+                    String display = dv + " " + (dv == 1l ? denom.unitName : denom.unitNamePlural);
+                    b.append(display);
+                    if (cv > 0) b.append(", ");
+                }
+            }
+
+            // might need this check for fractional values
+            if (cv > 0 || b.length() == 0) {
+                double displayVal = displayValue(cv);
+                b.append(String.format(formatString, displayVal, displayVal==1.0? name : namePlural));
+            }
+
+            return b.toString();
+
+        } else return String.format(formatString, value, value==1.0? name : namePlural);
+
     }
 
     /**
@@ -116,9 +150,12 @@ public class GringottsCurrency {
      * @return denomination for the item stack, or null if there is no such denomination
      */
     private Denomination denominationOf(ItemStack stack) {
-        Denomination d = new Denomination(stack);
+        DenominationKey d = new DenominationKey(stack);
         return denoms.get(d);
     }
 
-
+    @Override
+    public String toString() {
+        return StringUtils.join(sortedDenoms, '\n');
+    }
 }

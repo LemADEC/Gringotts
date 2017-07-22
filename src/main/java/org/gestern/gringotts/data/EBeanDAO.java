@@ -18,6 +18,8 @@ import org.gestern.gringotts.accountholder.AccountHolder;
 import java.util.*;
 import java.util.logging.Logger;
 
+import static org.gestern.gringotts.Configuration.CONF;
+
 public class EBeanDAO implements DAO {
 
     private final EbeanServer db = Gringotts.G.getDatabase();
@@ -26,7 +28,7 @@ public class EBeanDAO implements DAO {
     private static EBeanDAO dao;
 
     @Override
-    public boolean storeAccountChest(AccountChest chest) {
+    public synchronized boolean storeAccountChest(AccountChest chest) {
         SqlUpdate storeChest = db.createSqlUpdate(
                 "insert into gringotts_accountchest (world,x,y,z,account) values (:world, :x, :y, :z, (select id from gringotts_account where owner=:owner and type=:type))");
         Sign mark = chest.sign;
@@ -41,33 +43,53 @@ public class EBeanDAO implements DAO {
     }
 
     @Override
-    public boolean destroyAccountChest(AccountChest chest) {
+    public synchronized boolean destroyAccountChest(AccountChest chest) {
         Sign mark = chest.sign;
         return deleteAccountChest(mark.getWorld().getName(), mark.getX(), mark.getY(), mark.getZ());
     }
 
     @Override
-    public boolean storeAccount(GringottsAccount account) {
+    public synchronized boolean storeAccount(GringottsAccount account) {
         if (hasAccount(account.owner))
             return false;
         
         EBeanAccount acc = new EBeanAccount();
         acc.setOwner(account.owner.getId());
         acc.setType(account.owner.getType());
-        acc.setCents(0);
+
+        // TODO this is business logic and should probably be outside of the DAO implementation.
+        // also find a more elegant way of handling different account types
+        double startValue = 0;
+        String type = account.owner.getType();
+        switch (type) {
+            case "player":
+                startValue = CONF.startBalancePlayer;
+                break;
+            case "faction":
+                startValue = CONF.startBalanceFaction;
+                break;
+            case "town":
+                startValue = CONF.startBalanceTown;
+                break;
+            case "nation":
+                startValue = CONF.startBalanceNation;
+                break;
+        }
+
+        acc.setCents(CONF.currency.centValue(startValue));
         db.save(acc);
         return true;
     }
 
     @Override
-    public boolean hasAccount(AccountHolder accountHolder) {
+    public synchronized boolean hasAccount(AccountHolder accountHolder) {
         int accCount = db.find(EBeanAccount.class)
                 .where().ieq("type", accountHolder.getType()).ieq("owner", accountHolder.getId()).findRowCount();
         return accCount == 1;
     }
 
     @Override
-    public List<AccountChest> getChests() {
+    public synchronized List<AccountChest> getChests() {
         List<SqlRow> result = db.createSqlQuery("SELECT ac.world, ac.x, ac.y, ac.z, a.type, a.owner " +
                 "FROM gringotts_accountchest ac JOIN gringotts_account a ON ac.account = a.id ").findList();
 
@@ -124,7 +146,7 @@ public class EBeanDAO implements DAO {
     }
 
     @Override
-    public List<AccountChest> getChests(GringottsAccount account) {
+    public synchronized List<AccountChest> getChests(GringottsAccount account) {
         // TODO ensure world interaction is done in sync task
         SqlQuery getChests = db.createSqlQuery("SELECT ac.world, ac.x, ac.y, ac.z " +
                 "FROM gringotts_accountchest ac JOIN gringotts_account a ON ac.account = a.id " +
@@ -158,7 +180,7 @@ public class EBeanDAO implements DAO {
     }
 
     @Override
-    public boolean storeCents(GringottsAccount account, long amount) {
+    public synchronized boolean storeCents(GringottsAccount account, long amount) {
         SqlUpdate up = db.createSqlUpdate("UPDATE gringotts_account SET cents = :cents WHERE owner = :owner and type = :type");
         up.setParameter("cents", amount);
         up.setParameter("owner", account.owner.getId());
@@ -168,7 +190,7 @@ public class EBeanDAO implements DAO {
     }
 
     @Override
-    public long getCents(GringottsAccount account) {
+    public synchronized long getCents(GringottsAccount account) {
         // can this NPE? (probably doesn't)
         return db.find(EBeanAccount.class)
                 .where().ieq("type", account.owner.getType()).ieq("owner", account.owner.getId())
@@ -176,7 +198,7 @@ public class EBeanDAO implements DAO {
     }
 
     @Override
-    public void deleteAccount(GringottsAccount acc) {
+    public synchronized void deleteAccount(GringottsAccount acc) {
         // TODO implement deleteAccount, mayhaps?
         throw new RuntimeException("delete account not supported yet in EBeanDAO");
     }
@@ -187,7 +209,7 @@ public class EBeanDAO implements DAO {
     }
 
     @Override
-    public void shutdown() {
+    public synchronized void shutdown() {
         // probably handled by Bukkit?
     }
 

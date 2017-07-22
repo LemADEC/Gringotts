@@ -37,7 +37,7 @@ public class DerbyDAO implements DAO {
         storeAccount, getAccount, getChests,
         getChestsForAccount, getCents, storeCents;
 
-    private static final String dbName = "GringottsDB";
+    private static final String DB_NAME = "GringottsDB";
 
     /** Full connection string for database, without connect options. */
     private final String dbString;
@@ -45,7 +45,7 @@ public class DerbyDAO implements DAO {
     private DerbyDAO() {
 
         String dbPath = Gringotts.G.getDataFolder().getAbsolutePath();
-        dbString = "jdbc:derby:" + dbPath+"/"+dbName;
+        dbString = "jdbc:derby:" + dbPath+"/"+DB_NAME;
         String connectString = dbString + ";create=true";
 
         try {
@@ -82,9 +82,11 @@ public class DerbyDAO implements DAO {
                             "type varchar(64), owner varchar(64), cents int not null, " +
                             "primary key (id), constraint unique_type_owner unique(type, owner))";
 
-            int updated = connection.createStatement().executeUpdate(createAccount);
+            Statement stmt = connection.createStatement();
+            int updated = stmt.executeUpdate(createAccount);
             if (updated > 0)
                 log.info("created table ACCOUNT");
+            stmt.close();
         }
 
         ResultSet rs2 = dbmd.getTables(null, null, "ACCOUNTCHEST", null);
@@ -95,9 +97,11 @@ public class DerbyDAO implements DAO {
                             "world varchar(64), x integer, y integer, z integer, account integer not null, " + 
                             "primary key(id), constraint unique_location unique(world,x,y,z), constraint fk_account foreign key(account) references account(id))";
 
-            int updated = connection.createStatement().executeUpdate(createAccountChest);
+            Statement stmt = connection.createStatement();
+            int updated = stmt.executeUpdate(createAccountChest);
             if (updated > 0)
                 log.info("created table ACCOUNTCHEST");
+            stmt.close();
         }
     }
 
@@ -142,7 +146,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#storeAccountChest(org.gestern.gringotts.AccountChest)
      */
     @Override
-    public boolean storeAccountChest(AccountChest chest) {
+    public synchronized boolean storeAccountChest(AccountChest chest) {
         GringottsAccount account = chest.getAccount();
         Location loc = chest.sign.getLocation();
 
@@ -175,7 +179,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#destroyAccountChest(org.gestern.gringotts.AccountChest)
      */
     @Override
-    public boolean destroyAccountChest(AccountChest chest) {
+    public synchronized boolean destroyAccountChest(AccountChest chest) {
         Location loc = chest.sign.getLocation();
         try {
             checkConnection();
@@ -200,7 +204,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#storeAccount(org.gestern.gringotts.GringottsAccount)
      */
     @Override
-    public boolean storeAccount(GringottsAccount account) {
+    public synchronized boolean storeAccount(GringottsAccount account) {
         AccountHolder owner = account.owner;
 
         // don't store/overwrite if it's already there
@@ -245,7 +249,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#getAccount(org.gestern.gringotts.accountholder.AccountHolder)
      */
     @Override
-    public boolean hasAccount(AccountHolder accountHolder) {
+    public synchronized boolean hasAccount(AccountHolder accountHolder) {
 
         ResultSet result = null;
         try {
@@ -268,13 +272,15 @@ public class DerbyDAO implements DAO {
      * Migration method: Get all account raw data.
      * @return list of {{DerbyAccount}} describing the accounts
      */
-    public List<DerbyAccount> getAccountsRaw() {
+    public synchronized List<DerbyAccount> getAccountsRaw() {
 
         List<DerbyAccount> accounts = new LinkedList<>();
-        ResultSet result = null;
+        Statement stmt = null;
+        ResultSet result = null;        
         try {
             checkConnection();
-            result = connection.createStatement().executeQuery("select * from account");
+            stmt = connection.createStatement();
+            result = stmt.executeQuery("select * from account");
 
             while (result.next()) {
                 int id = result.getInt("id");
@@ -288,6 +294,7 @@ public class DerbyDAO implements DAO {
             throw new GringottsStorageException("Failed to get set of accounts", e);
         } finally {
             try { if (result!=null) result.close(); } catch (SQLException ignored) {}
+            try { if (stmt!=null) stmt.close(); } catch (SQLException ignored) {}
         }
 
         return accounts;
@@ -297,12 +304,14 @@ public class DerbyDAO implements DAO {
      * Migration method: Get all accountchest raw data.
      * @return ...
      */
-    public List<DerbyAccountChest> getChestsRaw() {
+    public synchronized List<DerbyAccountChest> getChestsRaw() {
         List<DerbyAccountChest> chests = new LinkedList<>();
+        Statement stmt = null;
         ResultSet result = null;
         try {
             checkConnection();
-            result = connection.createStatement().executeQuery("select * from accountchest");
+            stmt = connection.createStatement();
+            result = stmt.executeQuery("select * from accountchest");
 
             while (result.next()) {
                 int id = result.getInt("id");
@@ -319,6 +328,7 @@ public class DerbyDAO implements DAO {
             throw new GringottsStorageException("Failed to get set of accounts", e);
         } finally {
             try { if (result!=null) result.close(); } catch (SQLException ignored) {}
+            try { if (stmt!=null) stmt.close(); } catch (SQLException ignored) {}
         }
 
         return chests;
@@ -330,7 +340,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#getChests()
      */
     @Override
-    public List<AccountChest> getChests() {
+    public synchronized List<AccountChest> getChests() {
         List<AccountChest> chests = new LinkedList<>();
         ResultSet result = null;
         try {
@@ -386,7 +396,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#getChests(org.gestern.gringotts.GringottsAccount)
      */
     @Override
-    public List<AccountChest> getChests(GringottsAccount account) {
+    public synchronized List<AccountChest> getChests(GringottsAccount account) {
 
         AccountHolder owner = account.owner;
         List<AccountChest> chests = new LinkedList<>();
@@ -435,7 +445,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#storeCents(org.gestern.gringotts.GringottsAccount, long)
      */
     @Override
-    public boolean storeCents(GringottsAccount account, long amount) {
+    public synchronized boolean storeCents(GringottsAccount account, long amount) {
         try {
             checkConnection();
 
@@ -455,7 +465,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#getCents(org.gestern.gringotts.GringottsAccount)
      */
     @Override
-    public long getCents(GringottsAccount account) {
+    public synchronized long getCents(GringottsAccount account) {
 
         ResultSet result = null;
         try {
@@ -483,7 +493,7 @@ public class DerbyDAO implements DAO {
      * Get a DAO instance.
      * @return the DAO instance
      */
-    public static DerbyDAO getDao() {
+    public synchronized static DerbyDAO getDao() {
 
         if (dao != null) return dao;
 
@@ -503,7 +513,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#shutdown()
      */
     @Override
-    public void shutdown() {
+    public synchronized void shutdown() {
         try {
             log.info("shutting down database connection");
             // disconnect from derby completely
@@ -521,7 +531,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#finalize()
      */
     @Override
-    public void finalize() throws Throwable {
+    protected void finalize() throws Throwable {
         super.finalize();
         shutdown();
     }
@@ -530,7 +540,7 @@ public class DerbyDAO implements DAO {
      * @see org.gestern.gringotts.data.DAO#deleteAccount(org.gestern.gringotts.GringottsAccount)
      */
     @Override
-    public void deleteAccount(GringottsAccount acc) {
+    public synchronized void deleteAccount(GringottsAccount acc) {
         // TODO implement this, mayhaps?
         throw new RuntimeException("delete account not yet implemented");
     }

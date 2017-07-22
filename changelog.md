@@ -1,6 +1,50 @@
 Gringotts Changelog
 ===================
 
+v2.9
+----
+* DEPENDS ON JAVA 8. If your server is not on Java 8 yet, you should upgrade, or ask your service provider to upgrade. Java 7 isn't supported anymore by Oracle.
+* Should now work both in regular as well as async context. This means there should be no more "Asynchronous entity world add" errors anymore, and Gringotts is now compatible with Towny in async mode, as well as other plugins that call economy methods asynchronously.
+* The maximum virtual money allowed for an account is now equal to the *lowest* denomination, instead of the highest. I changed this because that behavior was causing lots of confusion.
+* fixed other minor bugs
+
+v2.8
+----
+* built for Minecraft 1.9 and Factions 2.8. May not be compatible with older Factions versions!
+* unsupported versions of Factions should be handled more gracefully now.
+* updated to current version of Metrics-Lite. Fixes annoying error messages.
+
+v2.7
+----
+* Named denominations: Each denomination can now have its own name, which will be shown in /balance messages and the like. To activate this feature, use the `named-denominations` config setting. By default this will use the denomination's displayname or regular item name, but you can define a custom name as well. See [configuration instructions](https://github.com/MinecraftWars/Gringotts/blob/master/doc/configuration.md) for details.
+* Balance messages can now be configured to show only regular balance or also vault/inventory balances. 
+* Now also supports `&` prefix to color codes in messages and item displayname/lore in addition to the default `§` prefix.
+* can now also used Vault-supported item names in denomination config, not only regular Bukkit names. This can make the config a bit more intuitive. (requires Vault)
+* lore config for denomination items now also allows a simple string instead of a string list.
+* configuration should now always be loaded as UTF8.
+* fixed an issue with `/money` commands failing on some servers.
+
+v2.6
+----
+* adds display name and lore support for currency items. See [configuration instructions](https://github.com/MinecraftWars/Gringotts/blob/master/doc/configuration.md) on how to configure this.
+  Thanks to dj5566 for contributing this feature!
+* `startingbalance` config option works again
+
+v2.5
+----
+* fix some currency requests causing internet accesses and thus lag spikes. Should fix some problems people have been having with Towny
+* /money now shows money in vaults and money in inventory in addition to total balance
+
+v2.4
+----
+* updates to dependency versions:
+    - Bukkit API 1.8.3-R0.1
+    - Vault API 1.5
+    - Factions / MassiveCore 2.7.5 (incompatible with older Factions versions)
+    - Towny 0.89.2.0
+    - WorldGuard 6.0 beta
+* minor fixes in message formatting
+
 v2.3
 ----
 * supports player UUIDs
@@ -116,7 +160,7 @@ v1.2.0
 
 v1.1.0
 ------
-* New permissions: `gringotts.createvault`, `gringotts.createvault`
+* New permissions: `gringotts.createvault`
 * Bugfixes concerning vault destruction and disbanded factions
 
 v1.0.1

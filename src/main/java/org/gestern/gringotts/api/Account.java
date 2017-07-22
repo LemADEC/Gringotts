@@ -33,6 +33,18 @@ public interface Account {
     double balance();
 
     /**
+     * Return the vault balance of this account.
+     * @return the vault balance of this account.
+     */
+    double vaultBalance();
+
+    /**
+     * Return the inventory balance of this account.
+     * @return the inventory balance of this account.
+     */
+    double invBalance();
+
+    /**
      * Return whether this account has at least the specified amount.
      * @param value amount to check
      * @return whether this account has at least the specified amount.
@@ -81,7 +93,7 @@ public interface Account {
 
     /**
      * Return the id of this account. For players, this is the player uuid. For banks, this is the name of the bank.
-     * The method call Eco.custom(type,id) result in this account for parameters this.type() and this.id().
+     * The method call Eco.custom(type,id) results in this account for parameters this.type() and this.id().
      * @return the id of this account
      */
     String id();

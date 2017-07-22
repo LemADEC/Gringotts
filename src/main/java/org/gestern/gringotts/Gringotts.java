@@ -34,6 +34,8 @@ import static org.gestern.gringotts.dependency.Dependency.DEP;
 
 public class Gringotts extends JavaPlugin {
 
+    private static final String MESSAGES_YML = "messages.yml";
+
     /** The Gringotts plugin instance. */
     public static Gringotts G;
 
@@ -165,7 +167,7 @@ public class Gringotts extends JavaPlugin {
             conf = YamlConfiguration.loadConfiguration(langReader);
         } else {
             // use custom/default
-            File langFile = new File(getDataFolder(), "messages.yml");
+            File langFile = new File(getDataFolder(), MESSAGES_YML);
             conf = YamlConfiguration.loadConfiguration(langFile);
         }
 
@@ -183,8 +185,8 @@ public class Gringotts extends JavaPlugin {
     @Override
     public void saveDefaultConfig() {
         super.saveDefaultConfig();
-        File defaultMessages = new File(getDataFolder(), "messages.yml");
-        if (! defaultMessages.exists()) saveResource("messages.yml", false);
+        File defaultMessages = new File(getDataFolder(), MESSAGES_YML);
+        if (! defaultMessages.exists()) saveResource(MESSAGES_YML, false);
     }
 
     private DAO getDAO() {

@@ -1,9 +1,10 @@
 Gringotts
 =========
 
-Gringotts is an item-based economy plugin for the Bukkit Minecraft server platform. Unlike earlier economy plugins, all currency value and money transactions are based on actual items in Minecraft, per default emeralds. The goals are to add a greater level of immersion, a generally more Minecraft-like feeling, and in the case of a PvP environment, making the currency itself vulnerable to raiding.
+[![Join the chat at https://gitter.im/MinecraftWars/Gringotts](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/MinecraftWars/Gringotts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/MinecraftWars/Gringotts.svg?branch=master)](https://travis-ci.org/MinecraftWars/Gringotts)
 
-Gringotts was created for the [Minecraft Wars](http://www.minecraft-wars.com/) PvP/survival server.
+Gringotts is an item-based economy plugin for the Bukkit Minecraft server platform. Unlike earlier economy plugins, all currency value and money transactions are based on actual items in Minecraft, per default emeralds. The goals are to add a greater level of immersion, a generally more Minecraft-like feeling, and in the case of a PvP environment, making the currency itself vulnerable to raiding.
 
 [Get Gringotts from BukkitDev](http://dev.bukkit.org/server-mods/gringotts/)
 
@@ -73,10 +74,19 @@ Download [Gringotts](http://dev.bukkit.org/server-mods/gringotts/files/) and pla
 
 Please see the [Configuration and Permissions](https://github.com/MinecraftWars/Gringotts/blob/master/doc/configuration.md) document on how to configure Gringotts.
 
+Problems? Questions?
+--------------------
+Have a look at the [Wiki](https://github.com/MinecraftWars/Gringotts/wiki). You're welcome to improve it, too!
+
 
 Development
 -----------
-This section is intended to help out developers who wish to make changes to Gringotts themselves. If you have any changes that you would like included in the main branch, please submit a pull request.
+Would you like to make changes to Gringotts yourself? Fork it!
+Pull requests are very welcome, but please make sure your changes fulfill the Gringotts quality baseline:
+
+* new features, settings, permissions are documented
+* required dependencies are all added to the build by Maven, not included in the repo
+* the project builds with Maven out-of-the-box
 
 Gringotts uses the [Maven 3](http://maven.apache.org/) build system. Build a working plugin jar with the command
 

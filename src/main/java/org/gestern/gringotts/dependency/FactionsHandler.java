@@ -8,21 +8,73 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.Plugin;
 import org.gestern.gringotts.Gringotts;
 import org.gestern.gringotts.accountholder.AccountHolder;
 import org.gestern.gringotts.accountholder.AccountHolderProvider;
 import org.gestern.gringotts.event.PlayerVaultCreationEvent;
 
 import static org.gestern.gringotts.Language.LANG;
-import static org.gestern.gringotts.Permissions.createvault_admin;
-import static org.gestern.gringotts.Permissions.createvault_faction;
+import static org.gestern.gringotts.Permissions.CREATEVAULT_ADMIN;
+import static org.gestern.gringotts.Permissions.CREATEVAULT_FACTION;
 import static org.gestern.gringotts.dependency.Dependency.DEP;
 
-public class FactionsHandler implements DependencyHandler, AccountHolderProvider {
+public abstract class FactionsHandler implements DependencyHandler, AccountHolderProvider {
+    public abstract FactionAccountHolder getFactionAccountHolder(Player player);
+    public abstract FactionAccountHolder getAccountHolderById(String id);
+
+    /**
+     * Get a valid Factions handler if the plugin instance is valid. Otherwise get a fake one.
+     * This is needed because HCFactions is a fork of Factions that uses some of the same classes,
+     * but trying to load it causes errors.
+     * @param factions Factions plugin instance
+     * @return a Factions handler
+     */
+    public static FactionsHandler getFactionsHandler(Plugin factions) {
+        if (factions instanceof Factions)
+            return new ValidFactionsHandler((Factions)factions);
+        else {
+            Gringotts.G.getLogger().warning(
+                    "Unable to load Factions handler because your version of Factions " +
+                    "is not compatible with Gringotts. Factions support will not work");
+            return new InvalidFactionsHandler();
+        }
+    }
+}
+
+class InvalidFactionsHandler extends FactionsHandler {
+
+    @Override
+    public FactionAccountHolder getFactionAccountHolder(Player player) {
+        return null;
+    }
+
+    @Override
+    public FactionAccountHolder getAccountHolderById(String id) {
+        return null;
+    }
+
+    @Override
+    public AccountHolder getAccountHolder(String id) {
+        return null;
+    }
+
+    @Override
+    public boolean enabled() {
+        return false;
+    }
+
+    @Override
+    public boolean exists() {
+        return false;
+    }
+}
+
+class ValidFactionsHandler extends FactionsHandler {
 
     private final Factions plugin;
 
-    public FactionsHandler(Factions plugin) {
+    public ValidFactionsHandler(Factions plugin) {
         this.plugin = plugin;
 
         if (plugin != null) {
@@ -36,6 +88,7 @@ public class FactionsHandler implements DependencyHandler, AccountHolderProvider
      * @param player player to get the faction for
      * @return FactionAccountHolder for the faction of which player is a member, if any. null otherwise.
      */
+    @Override
     public FactionAccountHolder getFactionAccountHolder(Player player) {
 
         MPlayer fplayer = MPlayer.get(player);
@@ -48,8 +101,9 @@ public class FactionsHandler implements DependencyHandler, AccountHolderProvider
      * @param id id to get the faction for
      * @return faction account holder for given id
      */
+    @Override
     public FactionAccountHolder getAccountHolderById(String id) {
-        Faction faction = FactionColl.get().getByName(id);
+        Faction faction = FactionColl.get().get(id);
         return faction != null? new FactionAccountHolder(faction) : null;
     }
 
@@ -84,7 +138,7 @@ public class FactionsHandler implements DependencyHandler, AccountHolderProvider
         if (owner != null) return owner;
 
         // just in case, also try the tag
-        Faction faction = FactionColl.get().getByName(id);
+        Faction faction = FactionColl.get().get(id);
 
         if (faction != null) 
             return new FactionAccountHolder(faction);
@@ -100,9 +154,9 @@ class FactionsListener implements Listener {
         // some listener already claimed this event
         if (event.isValid()) return;
 
-        if (event.getType().equals("faction")) {
+        if ("faction".equals(event.getType())) {
             Player player = event.getCause().getPlayer();
-            if (!createvault_faction.allowed(player)) {
+            if (!CREATEVAULT_FACTION.allowed(player)) {
                 player.sendMessage(LANG.plugin_faction_noVaultPerm);
                 return;
             }
@@ -110,7 +164,7 @@ class FactionsListener implements Listener {
             AccountHolder owner;
 
             String ownername = event.getCause().getLine(2);
-            if (ownername != null && ownername.length() > 0 && createvault_admin.allowed(player)) {
+            if (ownername != null && ownername.length() > 0 && CREATEVAULT_ADMIN.allowed(player)) {
                 // attempting to create account for named faction
                 owner = Gringotts.G.accountHolderFactory.get("faction", ownername);
                 if (owner==null) return;
@@ -131,6 +185,7 @@ class FactionsListener implements Listener {
 
 class FactionAccountHolder implements AccountHolder {
 
+    private static final String TAG_FACTION = "faction";
     private final Faction owner;
 
     /**
@@ -141,7 +196,7 @@ class FactionAccountHolder implements AccountHolder {
     }
 
     public FactionAccountHolder(String id) {
-        Faction faction = FactionColl.get().getByName(id);
+        Faction faction = FactionColl.get().get(id);
 
         if (faction != null)
             this.owner = faction;
@@ -185,7 +240,7 @@ class FactionAccountHolder implements AccountHolder {
 
     @Override
     public String getType() {
-        return "faction";
+        return TAG_FACTION;
     }
 
     @Override

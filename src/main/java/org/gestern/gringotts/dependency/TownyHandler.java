@@ -18,21 +18,23 @@ import static org.gestern.gringotts.Permissions.*;
 import static org.gestern.gringotts.dependency.Dependency.DEP;
 
 public abstract class TownyHandler implements DependencyHandler {
-    abstract public TownyAccountHolder getTownAccountHolder(Player player);
-    abstract public TownyAccountHolder getNationAccountHolder(Player player);
-    abstract public TownyAccountHolder getAccountHolderByAccountName(String name);
+    public abstract TownyAccountHolder getTownAccountHolder(Player player);
+    public abstract TownyAccountHolder getNationAccountHolder(Player player);
+    public abstract TownyAccountHolder getAccountHolderByAccountName(String name);
 
     /**
      * Get a valid towny handler if the plugin instance is valid. Otherwise get a fake one.
-     * Apparently Towny needs this special treatment, or it will throw exceptions with unavailable classes. 
-     * The same doesn't happen with Factions. I wonder why?
+     * Apparently Towny needs this special treatment, or it will throw exceptions with unavailable classes.
      * @param towny Towny plugin instance
      * @return a Towny handler
      */
     public static TownyHandler getTownyHandler(Plugin towny) {
         if (towny instanceof Towny)
             return new ValidTownyHandler((Towny)towny);
-        else return new InvalidTownyHandler();
+        else {
+            Gringotts.G.getLogger().warning("Unable to load Towny handler. Towny support will not work");
+            return new InvalidTownyHandler();
+        }
     }
 }
 
@@ -64,13 +66,15 @@ class InvalidTownyHandler extends TownyHandler {
 
 class ValidTownyHandler extends TownyHandler implements AccountHolderProvider {
 
+    private static final String TAG_TOWN = "town";
+    private static final String TAG_NATION = "nation";
     private final Towny plugin;
 
     public ValidTownyHandler(Towny plugin) {
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(new TownyListener(), Gringotts.G);
-        Gringotts.G.registerAccountHolderProvider("town", this);
-        Gringotts.G.registerAccountHolderProvider("nation", this);
+        Gringotts.G.registerAccountHolderProvider(TAG_TOWN, this);
+        Gringotts.G.registerAccountHolderProvider(TAG_NATION, this);
     }
 
     /**
@@ -79,11 +83,11 @@ class ValidTownyHandler extends TownyHandler implements AccountHolderProvider {
      * @return TownyAccountHolder for the town of which player is a resident, if any. null otherwise.
      */
     @Override
-	public TownyAccountHolder getTownAccountHolder(Player player) {
+    public TownyAccountHolder getTownAccountHolder(Player player) {
         try {
             Resident resident = TownyUniverse.getDataSource().getResident(player.getName());
             Town town = resident.getTown();
-            return new TownyAccountHolder(town, "town");
+            return new TownyAccountHolder(town, TAG_TOWN);
 
         } catch (NotRegisteredException ignored) { }
 
@@ -96,12 +100,12 @@ class ValidTownyHandler extends TownyHandler implements AccountHolderProvider {
      * @return TownyAccountHolder for the nation of which player is a resident, if any. null otherwise.
      */	
     @Override
-	public TownyAccountHolder getNationAccountHolder(Player player) {
+    public TownyAccountHolder getNationAccountHolder(Player player) {
         try {
             Resident resident = TownyUniverse.getDataSource().getResident(player.getName());
             Town town = resident.getTown();
             Nation nation = town.getNation();
-            return new TownyAccountHolder(nation, "nation");
+            return new TownyAccountHolder(nation, TAG_NATION);
 
         } catch (NotRegisteredException ignored) { }
 
@@ -116,12 +120,12 @@ class ValidTownyHandler extends TownyHandler implements AccountHolderProvider {
      * @return a TownyAccountHolder based on the name of the account
      */
     @Override
-	public TownyAccountHolder getAccountHolderByAccountName(String name) {
+    public TownyAccountHolder getAccountHolderByAccountName(String name) {
 
         if (name.startsWith("town-")) {
             try { 
                 TownyEconomyObject teo = TownyUniverse.getDataSource().getTown(name.substring(5)); 
-                return new TownyAccountHolder(teo, "town");
+                return new TownyAccountHolder(teo, TAG_TOWN);
             } 
             catch (NotRegisteredException ignored) { }
         }
@@ -129,7 +133,7 @@ class ValidTownyHandler extends TownyHandler implements AccountHolderProvider {
         if (name.startsWith("nation-")) {
             try { 
                 TownyEconomyObject teo = TownyUniverse.getDataSource().getNation(name.substring(7));
-                return new TownyAccountHolder(teo, "nation");
+                return new TownyAccountHolder(teo, TAG_NATION);
             } catch (NotRegisteredException ignored) { }
         }
 
@@ -166,11 +170,11 @@ class TownyListener implements Listener {
 
         String ownername = event.getCause().getLine(2);
         Player player = event.getCause().getPlayer();
-        boolean forOther = ownername!=null && ownername.length()>0 && createvault_admin.allowed(player);
+        boolean forOther = ownername!=null && ownername.length()>0 && CREATEVAULT_ADMIN.allowed(player);
 
         AccountHolder owner;
-        if (event.getType().equals("town")) {
-            if (!createvault_town.allowed(player)) {
+        if ("town".equals(event.getType())) {
+            if (!CREATEVAULT_TOWN.allowed(player)) {
                 player.sendMessage(LANG.plugin_towny_noTownVaultPerm);
                 return;
             }
@@ -190,8 +194,8 @@ class TownyListener implements Listener {
             event.setOwner(owner);
             event.setValid(true);
 
-        } else if (event.getType().equals("nation")) {
-            if (!createvault_nation.allowed(player)) {
+        } else if ("nation".equals(event.getType())) {
+            if (!CREATEVAULT_NATION.allowed(player)) {
                 player.sendMessage(LANG.plugin_towny_noNationVaultPerm);
                 return;
             }

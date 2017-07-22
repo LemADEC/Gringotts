@@ -12,7 +12,7 @@ import org.gestern.gringotts.api.*;
 import org.gestern.gringotts.currency.GringottsCurrency;
 import org.gestern.gringotts.data.DAO;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,6 +22,7 @@ import static org.gestern.gringotts.api.TransactionResult.SUCCESS;
 
 public class GringottsEco implements Eco {
 
+    private static final String TAG_PLAYER = "player";
     private final AccountHolderFactory accountOwners = Gringotts.G.accountHolderFactory;
     private final DAO dao = Gringotts.G.dao;
 
@@ -37,20 +38,20 @@ public class GringottsEco implements Eco {
 
     @Override
     public PlayerAccount player(String name) {
-        AccountHolder owner = accountOwners.get("player", name);
+        AccountHolder owner = accountOwners.get(TAG_PLAYER, name);
         if (owner instanceof PlayerAccountHolder)
             return new ValidPlayerAccount(Gringotts.G.accounting.getAccount(owner));
 
-        return new InvalidAccount("player", name);
+        return new InvalidAccount(TAG_PLAYER, name);
     }
 
     @Override
     public PlayerAccount player(UUID id) {
-        AccountHolder owner = accountOwners.get("player", id.toString());
+        AccountHolder owner = accountOwners.get(TAG_PLAYER, id.toString());
         if (owner instanceof PlayerAccountHolder)
             return new ValidPlayerAccount(Gringotts.G.accounting.getAccount(owner));
 
-        return new InvalidAccount("player", id.toString());
+        return new InvalidAccount(TAG_PLAYER, id.toString());
     }
 
     @Override
@@ -122,6 +123,12 @@ public class GringottsEco implements Eco {
         public double balance() {
             return 0; // invalid account has 0 balance
         }
+
+        @Override
+        public double vaultBalance() { return 0; }
+
+        @Override
+        public double invBalance() { return 0; }
 
         @Override
         public boolean has(double value) {
@@ -226,6 +233,16 @@ public class GringottsEco implements Eco {
         }
 
         @Override
+        public double vaultBalance() {
+            return CONF.currency.displayValue(acc.vaultBalance());
+        }
+
+        @Override
+        public double invBalance() {
+            return CONF.currency.displayValue(acc.invBalance());
+        }
+
+        @Override
         public boolean has(double value) {
             return acc.balance() >= CONF.currency.centValue(value);
         }
@@ -313,7 +330,7 @@ public class GringottsEco implements Eco {
     private class Curr implements Currency {
 
         final GringottsCurrency gcurr;
-        final String formatString; 
+        final String formatString; // TODO this should be configurable
 
         Curr(GringottsCurrency curr) {
             this.gcurr = curr;
@@ -332,7 +349,7 @@ public class GringottsEco implements Eco {
 
         @Override
         public String format(double value) {
-            return String.format(formatString, value, value==1.0? gcurr.name : gcurr.namePlural);
+            return CONF.currency.format(formatString,value);
         }
 
         @Override
@@ -345,7 +362,7 @@ public class GringottsEco implements Eco {
     @Override
     public Set<String> getBanks() {
         // TODO implement banks
-        return new HashSet<>();
+        return Collections.emptySet();
     }
 
 }

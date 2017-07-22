@@ -1,5 +1,6 @@
 package org.gestern.gringotts;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -7,6 +8,8 @@ import org.bukkit.block.Sign;
 import org.gestern.gringotts.currency.GringottsCurrency;
 
 public class Util {
+    
+    private Util() {}
 
     /**
      * Check whether a block is a sign or wall sign type.
@@ -116,5 +119,14 @@ public class Util {
             default:
                 return false;
         }
+    }
+
+    /**
+     * Alias for color code translation. Uses '&' as code prefix.
+     * @param s String to translate color codes.
+     * @return the translated String
+     */
+    public static String translateColors(String s) {
+        return ChatColor.translateAlternateColorCodes('&', s);
     }
 }

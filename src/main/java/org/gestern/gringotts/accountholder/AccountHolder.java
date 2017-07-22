@@ -26,10 +26,9 @@ public interface AccountHolder {
     void sendMessage(String message);
 
     @Override
-	int hashCode();
-    
+    int hashCode();
     @Override
-	boolean equals(Object other);
+    boolean equals(Object other);
 
     /**
      * Type of the account holder. For instance "faction" or "player".
